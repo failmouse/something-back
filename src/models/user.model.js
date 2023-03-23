@@ -66,7 +66,7 @@ class User {
     static async updateUser(id, name, email, password) {
 
         const query = {
-            text: 'UPDATE users SET name = $1, email = $2, password = $3 WHERE id = $4 RETURNING id, name, email, password',
+            text: 'UPDATE users SET name = $1, email = $2, password = $3 WHERE id = $4 RETURNING id, name, email',
             values: [name, email, password, id],
         };
 

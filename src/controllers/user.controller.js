@@ -1,13 +1,18 @@
-const userService = require('../services/user.service');
+const User = require('../models/user.model');
 const authUtils = require('../utils/auth.utils');
 const responseUtils = require('../utils/response.utils');
+const hashPassword = require('../utils/password.utils');
+const bcrypt = require('bcrypt');
 
 async function createUser(req, res) {
     const { name, email, password } = req.body;
+
+    const hashedPassword = await hashPassword(password);
+
     try {
-        await userService.createUser(name, email, password).then(
+        await User.registerUser(name, email, hashedPassword).then(
             user => {
-                responseUtils.sendSuccessResponse(res, authUtils.generateToken(user.id));
+                responseUtils.sendSuccessResponse(res, { "user": user, "token": authUtils.generateToken(user.id) });
             }
         );
     } catch (err) {
@@ -19,10 +24,17 @@ async function loginUser(req, res) {
     const { email, password } = req.body;
 
     try {
-        const user = await userService.loginUser(email, password);
+        const user = await User.loginUser(email);
 
         if (user) {
-            responseUtils.sendSuccessResponse(res, { "user": user, "token": authUtils.generateToken(user.id) });
+            const isValidPass = await bcrypt.compare(password, user.password);
+
+            if (isValidPass) {
+                delete user.password;
+                responseUtils.sendSuccessResponse(res, { "user": user, "token": authUtils.generateToken(user.id) });
+            }
+            else responseUtils.sendErrorResponse(res, 'Wrong email or password');
+
         } else {
             responseUtils.sendErrorResponse(res, 'Wrong email or password');
         }
@@ -32,10 +44,11 @@ async function loginUser(req, res) {
 }
 
 async function getUser(req, res) {
-    const id = req.id;
+    const { userId } = req;
 
     try {
-        const user = await userService.getUser(id);
+        const user = await User.getUser(userId);
+
         if (user) {
             responseUtils.sendSuccessResponse(res, user)
         } else {
@@ -48,7 +61,7 @@ async function getUser(req, res) {
 
 async function getAllUsers(req, res) {
     try {
-        const users = await userService.getAllUsers();
+        const users = await User.getAll();
         responseUtils.sendSuccessResponse(res, users)
     } catch (err) {
         responseUtils.sendErrorResponse(res, err.message);
@@ -56,10 +69,14 @@ async function getAllUsers(req, res) {
 }
 
 async function updateUser(req, res) {
-    const id = req.id;
+    const { userId } = req;
     const { name, email, password } = req.body;
+
+    const hashedPassword = await hashPassword(password);
+
     try {
-        const user = await userService.updateUser(id, name, email, password);
+        const user = await User.updateUser(userId, name, email, hashedPassword);
+
         if (user) {
             responseUtils.sendSuccessResponse(res, user)
         } else {

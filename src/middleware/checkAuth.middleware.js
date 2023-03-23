@@ -7,15 +7,15 @@ function checkAuth(req, res, next) {
         try {
             const decoded = auth.verifyToken(token);
 
-            req.id = decoded;
+            req.userId = decoded;
 
             next();
         } catch (e) {
-            return res.status(403).json({ message: 'No acess' });
+            return res.status(403).json({ message: 'No access' });
         }
     }
     else {
-        return res.status(403).json({ message: 'No acess' });
+        return res.status(403).json({ message: 'No access' });
     }
 
 };
